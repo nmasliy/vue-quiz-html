@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+		<title>Document</title>
+		<style>
+			button {
+				display: inline-block;
+				margin: 10px;
+			}
+
+			.quiz {
+				padding: 40px;
+				background-color: #eee;
+			}
+
+			/* required */
+			.progress {
+				height: 10px;
+				border-radius: 5px;
+				background-color: #fff;
+			}
+
+			.progress__fill {
+				width: 0;
+				height: 100%;
+				border-radius: 5px;
+				background-color: rgb(248, 140, 234);
+				transition: .3s ease-in-out;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="app">
+			<div class="quiz">
+				<div class="questions" v-if="!isFinished">
+					<div class="progress">
+						<div class="progress__fill" :style="{width: progressValueInPercent}"></div>
+					</div>
+					<form action="#" class="form">
+						<div class="question__item">
+							<h2>Вопрос № {{activeIndex + 1}}</h2>
+							<p>{{activeQuestion.text}}</p>
+							<div class="question__answers">
+								<div class="question__answers-item">
+									<label v-for="answer in activeQuestion.answers">
+										<input
+											type="radio"
+											name="answer"
+											:value="answer"
+											v-model="activeQuestion.picked"
+										/>
+										<span>{{answer}}</span>
+									</label>
+								</div>
+							</div>
+							<button
+								@click="changeQuestion(activeIndex - 1)"
+								:disabled="isFirstQuestion"
+								type="button"
+							>
+								Назад
+							</button>
+							<button
+								@click="changeQuestion(activeIndex + 1)"
+								:disabled="isLastQuestion"
+								type="button"
+							>
+								Вперёд
+							</button>
+						</div>
+						<button @click="getResults" type="button">
+							Завершить прохождение
+						</button>
+					</form>
+				</div>
+				<div class="result" v-else>
+					Вы правильно ответили на {{result.correct.length}} из
+					{{questions.length}} вопросов
+				</div>
+			</div>
+		</div>
+
+		<script>
+			const { createApp } = Vue;
+
+			createApp({
+				data() {
+					return {
+						activeIndex: 0,
+						questions: [
+							{
+								text: "",
+								answers: [""],
+								correctAnswerIndex: 0,
+							},
+						],
+						isFinished: false,
+						progress: 0,
+						result: {
+							correct: [],
+						},
+					};
+				},
+				computed: {
+					activeQuestion() {
+						return this.questions[this.activeIndex];
+					},
+					isLastQuestion() {
+						return this.activeIndex >= this.questions.length - 1;
+					},
+					isFirstQuestion() {
+						return this.activeIndex <= 0;
+					},
+					progressValueInPercent() {
+						return (this.progress * 100) / this.questions.length + "%";
+					},
+				},
+				watch: {
+					activeIndex() {
+						this.progress = this.questions.filter((item) => item.picked).length;
+					},
+				},
+				created() {
+					fetch("data.json")
+						.then((response) => response.json())
+						.then((data) => (this.questions = data.questions))
+						.catch((err) => {
+							console.error(err);
+						});
+				},
+				mounted() {
+					this.questions.forEach(item => item.picked = null)
+				},
+				methods: {
+					changeQuestion(index) {
+						this.activeIndex = index;
+					},
+					getResults() {
+						this.questions.forEach((item) => {
+							const correctAnswer = item.answers[item.correctAnswerIndex];
+
+							console.log("Вопрос: " + item.text);
+							console.log("Ответ: " + item.picked);
+
+							if (!item.picked) return;
+
+							if (item.picked === correctAnswer) {
+								this.result.correct.push(item.picked);
+								console.log("Правильно");
+							} else {
+								console.log("Не правильно");
+								console.log("Ответ должен быть: " + correctAnswer);
+							}
+						});
+
+						this.isFinished = true;
+					},
+				},
+			}).mount("#app");
+		</script>
+
+		<script src="script.js"></script>
+	</body>
+</html>
